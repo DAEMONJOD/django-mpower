@@ -10,14 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
-import pymysql
+# import pymysql
 from dotenv import load_dotenv
 from pathlib import Path
 import os
 from . info import *
 import mimetypes
 mimetypes.add_type("text/css", ".css", True)
-pymysql.install_as_MySQLdb()
+# pymysql.install_as_MySQLdb()
 load_dotenv()
 import nltk
 # nltk.download('punkt')
