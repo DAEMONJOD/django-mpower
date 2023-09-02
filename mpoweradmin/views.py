@@ -291,28 +291,7 @@ def dashboard(request, pk):
         del request.session['shower']
     return render(request, 'dashboard-mpoweradmin.html', {'pk': pk,'notifics': all_notis, 'recent': recent_mess_temp, 'candi': finalrecent,'charts': charts_context,'counts': countsj})
 
-def newjob(request, pk):
-    if(request.method=="POST"):
-        job=Jobs()
-        job.eid=Employer.objects.get(eid=pk)
-        job.title=request.POST['title']
-        job.location=request.POST['location']
-        job.fnarea=request.POST['fnarea']
-        job.jobdesc=request.POST['description']
-        job.experience=request.POST['experience']
-        job.careerlevel=request.POST['careerlevel']
-        job.jobtype=request.POST['jobtype']
-        job.basicpay=request.POST['basicpay']
-        job.skills=request.POST['skills']
-        job.responsibilities=request.POST['responsibilities']
-        job.requirements=request.POST['requirements']
-        job.save()
-        request.session['c_s_id']=job.jobid
-        return redirect('employer:cand_suggest', pk=pk)
-    if 'shower' in request.session:
-        del request.session['shower']
-    roledetails=RoleDetails.objects.all()
-    return render(request, 'newjob-mpoweradmin.html', {'pk': pk, 'roledetails': roledetails})
+
 
 def edit(request, pk):
     context = Employer.objects.get(eid=pk)
@@ -381,174 +360,21 @@ def post_ot(request, pk):
 
 def cupd_phone(request, pk):
     if request.method=="POST":
-        employ=Employer.objects.get(eid=pk)
+        employ=Admin.objects.get(aid=pk)
         employ.phone=request.POST['phone']
         employ.save()
         return JsonResponse({'message': 'x'})
 
-def manage(request, pk):
-    if request.method=="POST":
-        if 'act' in request.POST:
-            for i in request.POST.getlist('ids[]'):
-                Jobs.objects.filter(jobid=i).delete()
-            return redirect('employer:manage', pk=pk)
-        Jobs.objects.filter(jobid=request.POST['job_id']).delete()
-        return redirect('employer:manage', pk=pk)
-    all_jobs = Jobs.objects.filter(eid=pk).order_by('-postdate')
-    all_det = []
-    for i in all_jobs:
-        data={}
-        data['jobid']=i.jobid
-        data['title']=i.title
-        data['location']=i.location
-        data['fnarea']=i.fnarea
-        data['jobtype']=i.jobtype
-        applications=Application.objects.filter(job_id=i.jobid)
-        data['num']=len(applications)
-        data['postdate']=i.postdate
-        all_det.append(data)
-    count=len(all_jobs)
-    GET_params = request.GET.copy()
-    if('page' in GET_params):
-        last=GET_params['page'][-1]
-        GET_params['page']=last[0]
-    p=Paginator(all_det, 5)
-    page_number = request.GET.get('page')
-    try:
-        page_obj = p.get_page(page_number)
-    except PageNotAnInteger:
-        page_obj = p.page(1)
-    except EmptyPage:
-        page_obj = p.page(p.num_pages)
-    if 'shower' in request.session:
-        del request.session['shower']
-    return render(request, 'managejob-mpoweradmin.html', {'pk': pk, 'pe': page_obj, 'count': count})
+
 
 def candidates(request, pk):
     shower=""
     if 'shower' in request.session:
         shower=request.session['shower']
-    # if request.method=="POST":
-    #     if 'approve' in request.POST:
-    #         apps=Application.objects.get(apply_id=request.POST['apply_id'])
-    #         request.session['shower']=apps.job_id.jobid
-    #         apps.status=1
-    #         apps.save()
-    #         subject="Congratulations "+apps.user_id.name+" you are selected!"
-    #         message="Company: "+apps.job_id.eid.ename+"\nJob: "+apps.job_id.title
-    #         receipt=[apps.user_id.log_id.email]
-    #         send_emails(subject, message, receipt)
-    #         return redirect('employer:candidates', pk=pk)
-    #     if 'reject' in request.POST:
-    #         apps=Application.objects.get(apply_id=request.POST['apply_id'])
-    #         request.session['shower']=apps.job_id.jobid
-    #         apps.status=2
-    #         apps.save()
-    #         return redirect('employer:candidates', pk=pk)
-    #     if 'act' in request.POST:
-    #         if(request.POST['act']=="delall"):
-    #             for i in request.POST.getlist('ids[]'):
-    #                 ap=Application.objects.filter(apply_id=i)
-    #                 request.session['shower']=ap[0].job_id.jobid
-    #                 ap.delete()
-    #         if(request.POST['act']=="appall"):
-    #             for i in request.POST.getlist('ids[]'):
-    #                 apps=Application.objects.get(apply_id=i)
-    #                 apps.status=1
-    #                 apps.save()
-    #                 subject="Congratulations "+apps.user_id.name+" you are selected!"
-    #                 message="Company: "+apps.job_id.eid.ename+"\nJob: "+apps.job_id.title
-    #                 receipt=[apps.user_id.log_id.email]
-    #                 send_emails(subject, message, receipt)
-    #                 request.session['shower']=apps.job_id.jobid
-    #         if(request.POST['act']=="rejall"):
-    #             for i in request.POST.getlist('ids[]'):
-    #                 apps=Application.objects.get(apply_id=i)
-    #                 apps.status=2
-    #                 apps.save()
-    #                 request.session['shower']=apps.job_id.jobid
-    #         return redirect('employer:candidates', pk=pk)
-    #     ap=Application.objects.filter(apply_id=request.POST['apply_id'])
-    #     request.session['shower']=ap[0].job_id.jobid
-    #     ap.delete()
-    #     return redirect('employer:candidates', pk=pk)
-    # testinfo=TestInfo.objects.filter(eid=pk)
-    # applics=Application.objects.filter(eid=pk)
-    # jobs=Jobs.objects.filter(eid=pk).order_by('-postdate')
-    # print(jobs)
-    # app_count=[]
     employers = Employer.objects.annotate(num_jobs=Count('jobs')).order_by('-num_jobs')
 
-    # print(employers)
-    # single_apps=[]
-    # for i in jobs:
-    #     app_count.append(len(Application.objects.filter(job_id=i.jobid)))
     if(employers):
         e_apps = Jobs.objects.filter(eid_id=employers[0].eid)
-        # print(e_apps)
-    # if(jobs):
-    #     s_apps=Application.objects.filter(job_id=jobs[0].jobid)
-    #     for i in s_apps:
-    #         single_can={}
-    #         user=JobSeeker.objects.get(user_id=i.user_id.user_id)
-    #         single_can['user_id']=user.user_id
-    #         single_can['name']=user.name
-    #         single_can['location']=user.location
-    #         single_can['photo']=user.photo
-    #         job=Jobs.objects.get(jobid=i.job_id.jobid)
-    #         single_can['jobid']=job.jobid
-    #         single_can['title']=job.title
-    #         single_can['status']=i.status
-    #         single_can['date_applied']=i.date_applied
-    #         single_can['apply_id']=i.apply_id
-    #         single_can['log_id']=user.log_id.log_id
-    #         if i.status == 4:
-    #             testinfo1=TestInfo.objects.get(testinfoid=i.test.testinfoid)
-    #             testuser1=TestUser.objects.get(test_id=testinfo1.test_id.test_id, user_id=user.user_id)
-    #             single_can['results']=(int(testuser1.correct_answers)/int(testuser1.total_ques))*100
-    #             single_can['test_id']=testuser1.testuser_id
-    #         else:
-    #             single_can['results']=0
-    #         single_apps.append(single_can)
-    # all_can=[]
-    # for i in applics:
-    #     single_can={}
-    #     user=JobSeeker.objects.get(user_id=i.user_id.user_id)
-    #     single_can['user_id']=user.user_id
-    #     single_can['name']=user.name
-    #     single_can['location']=user.location
-    #     single_can['photo']=user.photo
-    #     job=Jobs.objects.get(jobid=i.job_id.jobid)
-    #     single_can['jobid']=job.jobid
-    #     single_can['title']=job.title
-    #     single_can['status']=i.status
-    #     single_can['date_applied']=i.date_applied
-    #     single_can['apply_id']=i.apply_id
-    #     single_can['log_id']=user.log_id.log_id
-    #     if i.status == 4:
-    #         testinfo1=TestInfo.objects.get(testinfoid=i.test.testinfoid)
-    #         testuser1=TestUser.objects.get(test_id=testinfo1.test_id.test_id, user_id=user.user_id)
-    #         single_can['test_id']=testuser1.testuser_id
-    #         single_can['results']=(int(testuser1.correct_answers)/int(testuser1.total_ques))*100
-    #     else:
-    #         single_can['results']=0
-    #     all_can.append(single_can)
-    # count=len(all_can)
-    # all_can = sorted(all_can, key=lambda d: d['date_applied'])
-    # all_can.reverse()
-    # GET_params = request.GET.copy()
-    # if('page' in GET_params):
-    #     last=GET_params['page'][-1]
-    #     GET_params['page']=last[0]
-    # p=Paginator(all_can, 5)
-    # page_number = request.GET.get('page')
-    # try:
-    #     page_obj = p.get_page(page_number)
-    # except PageNotAnInteger:
-    #     page_obj = p.page(1)
-    # except EmptyPage:
-    #     page_obj = p.page(p.num_pages)
-    #  'pe': page_obj, 'count': count, 'jobs': jobs, 'app_count': app_count, 'single': single_apps, 'shower': shower, 'test': testinfo,
     single_apps = [1,2]
     
     return render(request, 'candidate-mpoweradmin.html', {'pk': pk,'employers':employers,'e_apps':e_apps,'single': single_apps, 'shower': shower})
